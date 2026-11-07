@@ -14,10 +14,10 @@ install_packages()
     # hub-ctrl
     PKGLIST="${PKGLIST} libusb-dev"
     # AVR chip installation and building
-    PKGLIST="${PKGLIST} avrdude gcc-avr binutils-avr avr-libc"
+    # PKGLIST="${PKGLIST} avrdude gcc-avr binutils-avr avr-libc"
     # ARM chip installation and building
-    PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
-    PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi libusb-1.0"
+    # PKGLIST="${PKGLIST} stm32flash dfu-util libnewlib-arm-none-eabi"
+    # PKGLIST="${PKGLIST} gcc-arm-none-eabi binutils-arm-none-eabi libusb-1.0"
 
     # Update system package info
     report_status "Running apt-get update..."
