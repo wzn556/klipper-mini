@@ -15,10 +15,10 @@ install_packages()
     # hub-ctrl
     PKGLIST="${PKGLIST} libusb-devel"
     # AVR chip installation and building
-    PKGLIST="${PKGLIST} avrdude gcc-avr32-linux-gnu binutils-avr32-linux-gnu avr-libc"
+    # PKGLIST="${PKGLIST} avrdude gcc-avr32-linux-gnu binutils-avr32-linux-gnu avr-libc"
     # ARM chip installation and building
     # CentOS/Fedora do not appear to have these packages available at this time
-    PKGLIST="${PKGLIST} arm-none-eabi-gcc-cs arm-none-eabi-newlib"
+    # PKGLIST="${PKGLIST} arm-none-eabi-gcc-cs arm-none-eabi-newlib"
 
     # Install desired packages
     report_status "Installing packages..."
