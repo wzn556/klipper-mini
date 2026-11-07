@@ -1,0 +1,81 @@
+name: Sync Klipper-mini (merge)
+
+# 用 merge 合并：只新增提交，不重写历史，打印机端可以 fast-forward。
+# 注意：Moonraker 仍需在 [update_manager klipper] 里把 origin 配成本仓库地址。
+on:
+  schedule:
+    - cron: '30 19 * * *'   # UTC = 北京时间次日 03:30，实际会延迟几小时
+  workflow_dispatch:
+
+permissions:
+  contents: write      # push 需要写权限
+
+concurrency:
+  group: sync-klipper-mini
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0          # merge 要靠完整历史找 merge base，不能浅克隆
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "sync-bot"
+          git config user.email "bot@users.noreply.github.com"
+
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/Klipper3d/klipper.git
+          git fetch --no-tags upstream master
+
+      - name: Merge upstream/master into master
+        id: merge
+        run: |
+          BEFORE=$(git rev-parse HEAD)
+          if git merge --no-edit upstream/master; then
+            AFTER=$(git rev-parse HEAD)
+            if [ "$BEFORE" = "$AFTER" ]; then
+              echo "result=noop" >> "$GITHUB_OUTPUT"
+              echo "上游没有新提交，master 已是最新。"
+            else
+              echo "result=clean" >> "$GITHUB_OUTPUT"
+              echo "合并成功：$BEFORE -> $AFTER"
+            fi
+          else
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 普通 push，不加 --force：历史只增不改，远端一定是 fast-forward。
+      - name: Push (clean merge)
+        if: steps.merge.outputs.result == 'clean'
+        run: git push origin HEAD:master
+
+      # 本仓库 Issues 是关闭的，所以用「步骤摘要 + 任务失败」报警，失败会发邮件。
+      - name: Report conflict
+        if: steps.merge.outputs.result == 'conflict'
+        run: |
+          {
+            echo "## 冲突：上游改动与本地改动冲突，无法自动合并"
+            echo ""
+            echo "运行记录：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            echo "本地处理方式："
+            echo '```'
+            echo "cd ~/klipper"
+            echo "git checkout master && git pull"
+            echo "git remote add upstream https://github.com/Klipper3d/klipper.git"
+            echo "git fetch upstream"
+            echo "git merge upstream/master     # 解决冲突后：git add . && git commit"
+            echo "git push origin master"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::merge upstream/master 出现冲突，需人工处理"
+          exit 1
